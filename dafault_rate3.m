@@ -43,13 +43,28 @@ control = [LIMIT_BAL EDUCATION MARRIAGE AGE PAY_0 PAY_2 PAY_3 PAY_4 PAY_5...
 system = defaultpaymentnextmonth;
 n2 = floor(size(system,1)/3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% identification data
+%                       identification data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Dat.u = control(1:skip:end-n2,:);
-Dat.y = system(1:skip:end-n2,:);
-clearvars -except control system Dat FM skip n2 VAF i j EVAL EVAL_aux controlo
+control_auxiliar = control(1:skip:end-n2,:);
+system_auxiliar = system(1:skip:end-n2,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% validation data
+class_1 = [control_auxiliar system_auxiliar];
+class_1(~all(class_1(:,end),2),:) = [];  %rows
+class_0 = [control_auxiliar system_auxiliar];
+class_0(all(class_0(:,end),2),:) = [];  %rows
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Generator of a unbiased and random Sample (50% of Default and 50% of not default)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sample = [class_1; datasample(class_0,size(class_1,1))];
+sample_final = datasample(sample,size(sample,1));
+control_sample = sample_final(:,1:end-1);
+system_sample = sample_final(:,end);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Dat.u = control_sample;
+Dat.y = system_sample;
+clearvars -except control system Dat FM skip n2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           validation data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ue = control(end-n2+1:skip:end,:);
 ye = system(end-n2+1:skip:end,:);
@@ -81,10 +96,10 @@ xlabel('Time'); ylabel('Membership grade');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 decision = 0.5;
 ym(ym<decision)=0; ym(ym>=decision)=1;
-EVAL = 100.*Evaluate(ye(1:size(ym,1)),ym);
-stats = array2table(EVAL);
+EVAL = Evaluate(ye(1:size(ym,1)),ym);
+stats = array2table(EVAL(:,1:end-1));
 stats.Properties.VariableNames = {'Accuracy' 'Sensitivity' 'Specificity'...
-                                  'Precision' 'Recall' 'f_measure' 'gmean'};
+                                  'Precision' 'Recall' 'f_measure'};
 stats
 clearvars -except i j result FM Dat ye ue ym control system stats EVAL EVAL_aux controlo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
